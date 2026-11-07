@@ -33,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -192,6 +193,9 @@ internal fun MyTeamsRows(
         }
     }
 
+    // Vertical Rows: the team/league rows you folded away, by row key (kept when you open a game).
+    var foldedRows by rememberSaveable { mutableStateOf(emptyList<String>()) }
+
     // Stops above the hint line at the bottom, so it never sits over a row.
     Column(Modifier.fillMaxSize().padding(start = 56.dp, end = 28.dp, top = 20.dp, bottom = 24.dp)) {
         header()
@@ -242,13 +246,30 @@ internal fun MyTeamsRows(
             LazyColumn(
                 state = columnState,
                 modifier = Modifier.weight(1f).keepFocusWhileHeld(horizontal = false),
-                contentPadding = PaddingValues(bottom = 160.dp)
+                contentPadding = PaddingValues(bottom = 160.dp),
+                verticalArrangement = if (settings.verticalRows) Arrangement.spacedBy(6.dp) else Arrangement.Top
             ) {
                 if (settings.verticalRows) {
                     page.rows.forEach { row ->
-                        item(key = row.key) {
-                            RowHeader(row, follows, row.team?.let { places[it.key] })
+                        val expanded = row.key !in foldedRows
+                        val headerKey = "${row.key}|header"
+                        val toggle: () -> Unit = {
+                            foldedRows = if (row.key in foldedRows) foldedRows - row.key else foldedRows + row.key
                         }
+                        item(key = row.key) {
+                            RowHeader(
+                                row = row,
+                                follows = follows,
+                                place = row.team?.let { places[it.key] },
+                                expanded = expanded,
+                                modifier = Modifier
+                                    .focusRequester(requesterFor(headerKey))
+                                    .onFocusChanged { if (it.isFocused) onFocusKey(headerKey) },
+                                // Fold a row away to reach the next one; an empty row has nothing to fold.
+                                onToggle = if (row.events.isEmpty()) null else toggle
+                            )
+                        }
+                        if (!expanded) return@forEach
                         if (row.events.isEmpty()) {
                             item(key = "${row.key}|empty") {
                                 LiveText(
@@ -270,6 +291,7 @@ internal fun MyTeamsRows(
                                         reminded = follows.reminders.any { it.eventId == ev.id },
                                         use24h = use24h,
                                         playing = playing(ev),
+                                        height = 44.dp,
                                         modifier = modifier,
                                         onClick = { onOpen(ev) },
                                         onLongClick = { onQuickWatch(ev) }
@@ -282,6 +304,7 @@ internal fun MyTeamsRows(
                                         use24h = use24h,
                                         hideScores = settings.hideScores,
                                         playing = playing(ev),
+                                        height = 74.dp,
                                         modifier = modifier,
                                         onClick = { onOpen(ev) },
                                         onLongClick = { onQuickWatch(ev) }
@@ -352,8 +375,30 @@ internal fun MyTeamsRows(
 
 /** A row's heading: the team's badge (or the league's mark), its name, and how many games. */
 @Composable
-private fun RowHeader(row: SportsRow, follows: SportsFollows, place: String? = null) {
-    Row(Modifier.fillMaxWidth().height(30.dp).padding(top = 6.dp, bottom = 2.dp, start = 4.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun RowHeader(
+    row: SportsRow,
+    follows: SportsFollows,
+    place: String? = null,
+    expanded: Boolean = true,
+    modifier: Modifier = Modifier,
+    /** Vertical Rows: OK folds this row's games away (null: the heading isn't a stop). */
+    onToggle: (() -> Unit)? = null
+) {
+    var focused by remember { mutableStateOf(false) }
+    Row(
+        modifier
+            .fillMaxWidth()
+            .height(30.dp)
+            .background(if (focused) Color.White.copy(alpha = 0.08f) else Color.Transparent, RoundedCornerShape(8.dp))
+            .then(
+                if (onToggle != null) Modifier
+                    .onFocusChanged { focused = it.isFocused }
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onToggle)
+                else Modifier
+            )
+            .padding(top = 6.dp, bottom = 2.dp, start = 4.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         when (row.kind) {
             SportsRow.Kind.UPCOMING -> Box(Modifier.size(10.dp).clip(RoundedCornerShape(5.dp)).background(SportsLook.Live))
             SportsRow.Kind.TEAM -> row.team?.let { t ->
@@ -367,6 +412,7 @@ private fun RowHeader(row: SportsRow, follows: SportsFollows, place: String? = n
         // Just to read (not a stop): where the team stands, from its league's table.
         place?.let { LiveText("  ·  $it", color = SportsLook.Dim, size = 12.sp, weight = FontWeight.Bold) }
         Spacer(Modifier.weight(1f))
+        if (onToggle != null) LiveText(if (expanded) "▾  " else "▸  ", color = SportsLook.Dim, size = 11.sp, weight = FontWeight.Bold)
         val ahead = row.events.count { it.state != GameState.POST }
         LiveText(
             when (row.kind) {
