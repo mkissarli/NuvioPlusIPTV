@@ -362,6 +362,7 @@ internal fun GameCard(
     use24h: Boolean,
     hideScores: Boolean,
     playing: Boolean,
+    height: Dp = 86.dp,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit
@@ -375,7 +376,7 @@ internal fun GameCard(
     Box(
         modifier
             .fillMaxWidth()
-            .height(86.dp)
+            .height(height)
             // Big events (WrestleMania…): a gold border, same size as every other card.
             .sportsFrame(focused, premium, Color(0xFFFFCE54))
             .onFocusChanged { focused = it.isFocused }
@@ -521,6 +522,7 @@ internal fun UpcomingRow(
     reminded: Boolean,
     use24h: Boolean,
     playing: Boolean,
+    height: Dp = 50.dp,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit
@@ -533,7 +535,7 @@ internal fun UpcomingRow(
     Row(
         modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .height(height)
             .sportsFrame(focused, false, accent, radius = 12.dp)
             .onFocusChanged { focused = it.isFocused }
             .combinedClickable(
