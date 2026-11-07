@@ -244,6 +244,54 @@ internal fun MyTeamsRows(
                 modifier = Modifier.weight(1f).keepFocusWhileHeld(horizontal = false),
                 contentPadding = PaddingValues(bottom = 160.dp)
             ) {
+                if (settings.verticalRows) {
+                    page.rows.forEach { row ->
+                        item(key = row.key) {
+                            RowHeader(row, follows, row.team?.let { places[it.key] })
+                        }
+                        if (row.events.isEmpty()) {
+                            item(key = "${row.key}|empty") {
+                                LiveText(
+                                    "No games found for ${row.title} yet. They show here as soon as the schedule has them.",
+                                    color = SportsLook.Dim, size = 12.sp, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                                )
+                            }
+                        } else {
+                            items(row.events, key = { ev -> "${row.key}|${ev.id}" }) { ev ->
+                                val key = "${row.key}|${ev.id}"
+                                val modifier = Modifier
+                                    .focusRequester(requesterFor(key))
+                                    .onFocusChanged { if (it.isFocused) onFocusKey(key) }
+                                if (ev.state == GameState.PRE || ev.state == GameState.OFF) {
+                                    UpcomingRow(
+                                        ev = ev,
+                                        channel = channelOf(ev),
+                                        follows = follows,
+                                        reminded = follows.reminders.any { it.eventId == ev.id },
+                                        use24h = use24h,
+                                        playing = playing(ev),
+                                        modifier = modifier,
+                                        onClick = { onOpen(ev) },
+                                        onLongClick = { onQuickWatch(ev) }
+                                    )
+                                } else {
+                                    GameCard(
+                                        ev = ev,
+                                        follows = follows,
+                                        now = now,
+                                        use24h = use24h,
+                                        hideScores = settings.hideScores,
+                                        playing = playing(ev),
+                                        modifier = modifier,
+                                        onClick = { onOpen(ev) },
+                                        onLongClick = { onQuickWatch(ev) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    return@LazyColumn
+                }
                 items(page.rows, key = { it.key }) { row ->
                     Column {
                         RowHeader(row, follows, row.team?.let { places[it.key] })
