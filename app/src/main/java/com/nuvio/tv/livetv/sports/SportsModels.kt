@@ -188,6 +188,8 @@ data class SportsSettings(
     val onlyOnMyChannels: Boolean = false,
     /** The video window on the Sports page (games play there; off: the full-width layout). */
     val videoWindow: Boolean = true,
+    /** My Sports: each row's games listed one under another instead of scrolling sideways. */
+    val verticalRows: Boolean = false,
     /** Leagues taken off the Sports page. */
     val hiddenLeagues: Set<String> = emptySet(),
     /** A network as ESPN names it (lowercase) -> the channel you picked for it. */
@@ -220,6 +222,7 @@ data class SportsSettings(
         .put("scoringAlerts", scoringAlerts)
         .put("onlyMyChannels", onlyOnMyChannels)
         .put("videoWindow", videoWindow)
+        .put("verticalRows", verticalRows)
         .put("hiddenLeagues", JSONArray(hiddenLeagues.toList()))
         .put("networkChannels", JSONObject(networkChannels as Map<*, *>))
         .put("eventChannels", JSONObject(eventChannels as Map<*, *>))
@@ -251,6 +254,7 @@ data class SportsSettings(
                     // Saved under a new name: the old one was on for everyone by default, so it starts off.
                     onlyOnMyChannels = o.optBoolean("onlyMyChannels", d.onlyOnMyChannels),
                     videoWindow = o.optBoolean("videoWindow", d.videoWindow),
+                    verticalRows = o.optBoolean("verticalRows", d.verticalRows),
                     hiddenLeagues = o.optJSONArray("hiddenLeagues").strings().toSet(),
                     networkChannels = o.optJSONObject("networkChannels").stringMap(),
                     eventChannels = o.optJSONObject("eventChannels").stringMap(),

@@ -146,6 +146,12 @@ fun SportsSettingsContent(
                         { update { it.copy(videoWindow = !it.videoWindow) } }
                     )
                     SettingsToggleRow(
+                        "Vertical Rows",
+                        "My Sports lists each team's games one under another instead of scrolling sideways",
+                        s.verticalRows,
+                        { update { it.copy(verticalRows = !it.verticalRows) } }
+                    )
+                    SettingsToggleRow(
                         "Only Games on My Channels",
                         "Leaves out games none of your channels show. Games of teams you follow always show",
                         s.onlyOnMyChannels,
